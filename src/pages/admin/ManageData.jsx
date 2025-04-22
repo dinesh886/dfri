@@ -140,7 +140,32 @@ const ManageData = () => {
                     {value}
                 </span>
             )
-        }
+        },
+        //  {
+        //     key: 'actions',
+        //     header: 'Actions',
+        //     actions: [
+        //         {
+        //             name: 'view',
+        //             icon: <FaEye />,
+        //             title: 'View Details',
+        //             handler: handleView
+        //         },
+        //         {
+        //             name: 'edit',
+        //             icon: <FaEdit />,
+        //             title: 'Edit Record',
+        //             handler: handleEdit
+        //         },
+        //         {
+        //             name: 'delete',
+        //             icon: <FaTrash />,
+        //             title: 'Delete Participant',
+        //             handler: handleDelete,
+        //             className: 'delete-action' // Optional custom class
+        //         }
+        //     ]
+        // }
     ];
 
     const handleAddNew = () => {

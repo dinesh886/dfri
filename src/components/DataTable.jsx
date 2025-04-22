@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { FaEye, FaEdit, FaTrash, FaFileCsv, FaSearch, FaPlus, FaFilter, FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { FaEye, FaEdit, FaTrash, FaFileCsv, FaSearch } from "react-icons/fa";
 import { CiFilter } from "react-icons/ci";
 import { IoFilterOutline } from "react-icons/io5";
 import "./DataTable.css";
@@ -10,9 +10,6 @@ const DataTable = ({
     data = [],
     columns = [],
     onAddNew,
-    onView,
-    onEdit,
-    onDelete,
     searchPlaceholder = "Search...",
     exportFileName = "data_export",
     rowsPerPageOptions = [10, 25, 50],
@@ -23,6 +20,7 @@ const DataTable = ({
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(defaultRowsPerPage);
 
+    // Memoized filtered and sorted data
     const filteredData = useMemo(() => {
         let result = [...data];
 
@@ -30,6 +28,7 @@ const DataTable = ({
         if (searchTerm) {
             result = result.filter((row) => {
                 return columns.some((col) => {
+                    if (col.searchable === false) return false;
                     const value = row[col.key];
                     return String(value).toLowerCase().includes(searchTerm.toLowerCase());
                 });
@@ -42,12 +41,8 @@ const DataTable = ({
                 const aValue = a[sortConfig.key];
                 const bValue = b[sortConfig.key];
 
-                if (aValue < bValue) {
-                    return sortConfig.direction === 'asc' ? -1 : 1;
-                }
-                if (aValue > bValue) {
-                    return sortConfig.direction === 'asc' ? 1 : -1;
-                }
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
             });
         }
@@ -55,37 +50,32 @@ const DataTable = ({
         return result;
     }, [data, columns, searchTerm, sortConfig]);
 
+    // Pagination logic
     const totalPages = Math.ceil(filteredData.length / rowsPerPage);
     const currentData = filteredData.slice(
         (currentPage - 1) * rowsPerPage,
         currentPage * rowsPerPage
     );
 
+    // Sorting handler
     const requestSort = (key) => {
-        let direction = 'asc';
-        if (sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
+        const direction = sortConfig.key === key && sortConfig.direction === 'asc'
+            ? 'desc'
+            : 'asc';
         setSortConfig({ key, direction });
     };
 
+    // CSV Export
     const exportToCSV = () => {
         const headers = columns.map(col => col.header);
         const keys = columns.map(col => col.key);
 
-        const csvContent =
-            headers.join(",") +
-            "\n" +
-            filteredData.map((row) =>
-                keys.map(key => {
-                    const value = row[key];
-                    // Format dates if needed
-                    if (key.toLowerCase().includes('date') && value instanceof Date) {
-                        return `"${new Date(value).toLocaleDateString()}"`;
-                    }
-                    return `"${value || ''}"`;
-                }).join(",")
-            ).join("\n");
+        const csvContent = [
+            headers.join(","),
+            ...filteredData.map(row =>
+                keys.map(key => `"${row[key] || ''}"`).join(",")
+            )
+        ].join("\n");
 
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const link = document.createElement("a");
@@ -94,40 +84,37 @@ const DataTable = ({
         link.click();
     };
 
-    const handleClear = () => {
-        setSearchTerm("");
-        setCurrentPage(1);
-    };
-
+    // Cell content renderer
     const renderCellContent = (row, column) => {
-        const value = row[column.key];
-
-        if (column.render) {
-            return column.render(value, row);
-        }
-
-        if (column.key.toLowerCase().includes('date') && value) {
-            return new Date(value).toLocaleDateString();
-        }
-
-        if (column.key.toLowerCase() === 'status' && value) {
+        if (column.actions) {
             return (
-                <span className={`status-badge ${String(value).toLowerCase()}`}>
-                    {value}
-                </span>
+                <div className="action-buttons">
+                    {column.actions.map((action, index) => (
+                        <button
+                            key={index}
+                            className={`action-btn ${action.name}-btn`}
+                            onClick={() => action.handler(row)}
+                            title={action.title}
+                        >
+                            {action.icon}
+                        </button>
+                    ))}
+                </div>
             );
         }
 
-        return value;
+        if (column.render) {
+            return column.render(row[column.key], row);
+        }
+
+        return row[column.key];
     };
 
     return (
         <div className="admin-table-container">
             {/* Table Controls */}
             <div className="table-controls">
-                {/* Left side - Search and Filter */}
                 <div className="controls-group">
-                    {/* Search with floating label effect */}
                     <div className="search-container">
                         <div className="search-input-container">
                             <FaSearch className="search-icon" />
@@ -144,51 +131,14 @@ const DataTable = ({
                             </label>
                             {searchTerm && (
                                 <button className="clear-search-btn" onClick={() => setSearchTerm("")}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
+                                    ×
                                 </button>
                             )}
                         </div>
                     </div>
-
-                    {/* Rows per page selector */}
-                    <div className="rows-per-page-selector">
-                        <select
-                            value={rowsPerPage}
-                            onChange={(e) => {
-                                setRowsPerPage(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="rows-per-page-select"
-                        >
-                            {rowsPerPageOptions.map(option => (
-                                <option key={option} value={option}>
-                                    Show {option}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Reset filters button */}
-                    {searchTerm && (
-                        <button className="reset-filters-btn" onClick={handleClear}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7h16M6 7v12a2 2 0 002 2h8a2 2 0 002-2V7m-4-4v3m-6-3v3" />
-                            </svg>
-                            Reset
-                        </button>
-                    )}
                 </div>
 
-                {/* Right side - Action buttons */}
                 <div className="action-buttons-container">
-                    {onAddNew && (
-                        <button className="add-new-btn" onClick={onAddNew}>
-                            <FaPlus className="btn-icon" />
-                            <span className="btn-text">Add New</span>
-                        </button>
-                    )}
                     <button className="export-btn" onClick={exportToCSV}>
                         <FaFileCsv className="btn-icon" />
                         <span className="btn-text">Export as CSV</span>
@@ -215,9 +165,6 @@ const DataTable = ({
                                     </div>
                                 </th>
                             ))}
-                            {(onView || onEdit || onDelete) && (
-                                <th>Actions</th>
-                            )}
                         </tr>
                     </thead>
                     <tbody>
@@ -229,42 +176,11 @@ const DataTable = ({
                                             {renderCellContent(row, column)}
                                         </td>
                                     ))}
-                                    {(onView || onEdit || onDelete) && (
-                                        <td className="actions-cell">
-                                            {onView && (
-                                                <button
-                                                    className="action-btn view-btn"
-                                                    onClick={() => onView(row)}
-                                                    title="View"
-                                                >
-                                                    <FaEye />
-                                                </button>
-                                            )}
-                                            {onEdit && (
-                                                <button
-                                                    className="action-btn edit-btn"
-                                                    onClick={() => onEdit(row)}
-                                                    title="Edit"
-                                                >
-                                                    <FaEdit />
-                                                </button>
-                                            )}
-                                            {onDelete && (
-                                                <button
-                                                    className="action-btn delete-btn"
-                                                    onClick={() => onDelete(row)}
-                                                    title="Delete"
-                                                >
-                                                    <FaTrash />
-                                                </button>
-                                            )}
-                                        </td>
-                                    )}
                                 </tr>
                             ))
                         ) : (
                             <tr className="no-data-row">
-                                <td colSpan={columns.length + ((onView || onEdit || onDelete) ? 1 : 0)}>
+                                <td colSpan={columns.length}>
                                     <div className="no-data-message">
                                         No matching records found
                                     </div>
@@ -275,6 +191,7 @@ const DataTable = ({
                 </table>
             </div>
 
+            {/* Pagination - Same as before */}
             {/* Pagination */}
             {filteredData.length > rowsPerPage && (
                 <div className="pagination-container">
