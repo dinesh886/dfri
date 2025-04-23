@@ -1,12 +1,12 @@
 /* Base Styles */
-.admin-table-container {
+.data-table-container {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #333;
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     overflow: hidden;
-    margin: 20px 0;
+    /* margin: 20px 0; */
     padding: 20px;
 }
 
@@ -15,102 +15,269 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 24px;
+    padding: 12px 16px;
     background: #ffffff;
-    border-radius: 12px 12px 0 0;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    gap: 16px;
+    border-radius: 8px 8px 0 0;
+    border-bottom: 1px solid #f1f5f9;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 /* Controls Group */
 .controls-group {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     flex: 1;
+    min-width: 240px;
 }
 
 /* Search Container */
 .search-container {
     position: relative;
     flex: 1;
-    max-width: 320px;
+    max-width: 400px;
+    min-width: 200px;
 }
 
 .search-input-container {
     position: relative;
-    height: 48px;
+    height: 42px;
 }
 
 .search-icon {
     position: absolute;
-    left: 16px;
+    left: 14px;
     top: 50%;
     transform: translateY(-50%);
-    color: #64748b;
-    z-index: 1;
+    color: #94a3b8;
+    z-index: 2;
+    transition: color 0.2s ease;
 }
 
 .search-input {
     position: absolute;
     width: 100%;
     height: 100%;
-    padding: 0 16px 0 48px;
+    padding: 0 42px 0 42px;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 0.875rem;
     background: transparent;
     transition: all 0.3s ease;
     z-index: 1;
-    /* Lower than label */
 }
 
 .search-input:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    border-color: var(--sidebar-active);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.search-input:focus~.search-icon {
+    color: #3b82f6;
 }
 
 .floating-label {
     position: absolute;
-    left: 48px;
+    left: 42px;
     top: 50%;
     transform: translateY(-50%);
-    color: #64748b;
-    font-size: 14px;
+    color: #94a3b8;
+    font-size: 0.875rem;
     transition: all 0.2s ease;
     pointer-events: none;
     z-index: 2;
-    /* Put label above input */
     background: white;
-    /* White background to cover input border */
     padding: 0 4px;
+    margin-left: -4px;
 }
 
 .search-input:focus+.floating-label,
 .search-input:not(:placeholder-shown)+.floating-label {
-    transform: translateY(-180%) scale(0.85);
-    left: 44px;
-    color: #3b82f6;
+    transform: translateY(-150%) scale(0.85);
+    left: 38px;
+    color: var(--sidebar-active);
+    background: white;
     z-index: 3;
 }
 
 .clear-search-btn {
     position: absolute;
-    right: 16px;
+    right: 12px;
     top: 50%;
     transform: translateY(-50%);
-    background: none;
+    width: 20px;
+    height: 20px;
+    background: #e2e8f0;
     border: none;
-    color: #94a3b8;
+    border-radius: 50%;
+    color: #64748b;
     cursor: pointer;
     z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
 }
 
 .clear-search-btn:hover {
-    color: #64748b;
+    background: #cbd5e1;
+    color: #475569;
 }
 
+/* Action Buttons Container */
+.action-buttons-container {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Base Button Styles */
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    min-width: 120px;
+    height: 40px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Button Icons */
+.btn-icon {
+    font-size: 14px;
+}
+
+/* Add New Button (Primary Action) */
+.Add-new {
+    /* background: ; */
+    color: var(--sidebar-active) ;
+}
+
+.Add-new:active {
+    transform: translateY(0);
+}
+
+/* Sample Download Button */
+.sample-excel-download {
+    background: var(--sidebar-active);
+    color: white;
+}
+
+.sample-excel-download:active {
+    transform: translateY(0);
+}
+
+/* Excel Upload Button */
+.excel-upload {
+    background: var(--sidebar-active);;
+    color: white;
+}
+.excel-upload:active {
+    transform: translateY(0);
+}
+
+.download-excel{
+    background: var(--sidebar-active);
+    color: white;
+}
+
+/* Loading State */
+.action-btn:disabled {
+    position: relative;
+    opacity: 0.8;
+    cursor: not-allowed;
+}
+
+
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .action-buttons-container {
+        gap: 8px;
+    }
+
+    .action-btn {
+        min-width: 100px;
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .btn-icon {
+        font-size: 12px;
+    }
+}
+/* Spinner */
+.spinner-small {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .table-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .controls-group {
+        width: 100%;
+    }
+
+    .search-container {
+        max-width: 100%;
+    }
+
+    .action-buttons-container {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .Add-new,
+    .sample-excel-download,
+    .excel-upload,
+    .download-excel {
+        flex: 1;
+        min-width: auto;
+    }
+}
 /* Filter Container */
 .filter-container {
     position: relative;
@@ -183,98 +350,6 @@
     flex-shrink: 0;
 }
 
-.export-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 48px;
-    padding: 0 20px;
-    background: linear-gradient(to right, #10b981, #059669);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
-}
-
-.export-btn:hover {
-    background: linear-gradient(to right, #059669, #047857);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(5, 150, 105, 0.3);
-}
-
-.export-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
-}
-
-.btn-icon {
-    display: flex;
-    align-items: center;
-}
-
-.btn-icon svg {
-    stroke: white;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .table-controls {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 12px;
-    }
-
-    .controls-group {
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .search-container,
-    .filter-container {
-        max-width: 100%;
-        width: 100%;
-    }
-
-    .export-btn-container {
-        width: 100%;
-    }
-
-    .export-btn {
-        width: 100%;
-        justify-content: center;
-    }
-}
-
-.btn-primary:hover {
-    background-color: #0069d9;
-}
-
-.btn-export {
-    background-color: #28a745;
-    color: #fff;
-    padding: 8px 14px;
-    border: none;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    font-weight: 500;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background 0.3s ease;
-}
-
-.btn-export:hover {
-    background-color: #218838;
-}
-
-.btn-icon {
-    margin-right: 6px;
-    font-size: 16px;
-}
 
 
 
@@ -325,29 +400,29 @@
     background: #f9fafb;
 }
 
-/* Status Badges */
+/* Status Badge */
 .status-badge {
     display: inline-block;
-    padding: 6px 12px;
-    border-radius: 20px;
+    padding: 4px 8px;
+    border-radius: 4px;
     font-size: 12px;
     font-weight: 500;
     text-transform: capitalize;
 }
 
-.completed {
-    background: #dcfce7;
-    color: #166534;
+.status-badge.completed {
+    background-color: #c6f6d5;
+    color: #2f855a;
 }
 
-.pending {
-    background: #fef9c3;
-    color: #854d0e;
+.status-badge.pending {
+    background-color: #feebc8;
+    color: #c05621;
 }
 
-.cancelled {
-    background: #fee2e2;
-    color: #991b1b;
+.status-badge.cancelled {
+    background-color: #fed7d7;
+    color: #c53030;
 }
 
 

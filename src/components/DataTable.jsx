@@ -1,15 +1,33 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { FaEye, FaEdit, FaTrash, FaFileCsv, FaSearch } from "react-icons/fa";
+import {
+    FaEye, FaEdit, FaTrash, FaFileCsv,
+    FaSearch, FaDownload, FaPlus, FaFileUpload,
+    FaFileDownload, FaFilter, FaTimes, FaFileExcel
+} from "react-icons/fa";
 import { CiFilter } from "react-icons/ci";
+import { BsDownload } from "react-icons/bs";
 import { IoFilterOutline } from "react-icons/io5";
+import { DatePicker } from "antd";
+import * as XLSX from "xlsx";
+import ExportModal from "./ExportModal";
 import "./DataTable.css";
 
 const DataTable = ({
     data = [],
     columns = [],
+    // Button visibility controls
+    showSearch = true,
+    showAddNew = true,
+    showDownloadSample = true,
+    showUploadExcel = true,
+    showExport = true,
+    // Action handlers
     onAddNew,
+    onDownloadSample,
+    onUploadExcel,
+    // Other props
     searchPlaceholder = "Search...",
     exportFileName = "data_export",
     rowsPerPageOptions = [10, 25, 50],
@@ -19,6 +37,17 @@ const DataTable = ({
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(defaultRowsPerPage);
+    const [loadingStates, setLoadingStates] = useState({
+        addNew: false,
+        downloadSample: false,
+        uploadExcel: false,
+        export: false
+    });
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [exportFormat, setExportFormat] = useState("csv");
+    const [dateRange, setDateRange] = useState([null, null]);
+    const [gender, setGender] = useState("all");
+    const [ageRange, setAgeRange] = useState({ min: "", max: "" });
 
     // Memoized filtered and sorted data
     const filteredData = useMemo(() => {
@@ -34,6 +63,7 @@ const DataTable = ({
                 });
             });
         }
+
 
         // Sorting
         if (sortConfig.key) {
@@ -65,24 +95,83 @@ const DataTable = ({
         setSortConfig({ key, direction });
     };
 
-    // CSV Export
-    const exportToCSV = () => {
-        const headers = columns.map(col => col.header);
-        const keys = columns.map(col => col.key);
-
-        const csvContent = [
-            headers.join(","),
-            ...filteredData.map(row =>
-                keys.map(key => `"${row[key] || ''}"`).join(",")
-            )
-        ].join("\n");
-
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `${exportFileName}_${new Date().toISOString().slice(0, 10)}.csv`;
-        link.click();
+    // Action handlers with loading states
+    const handleAction = async (actionName, actionFn) => {
+        setLoadingStates(prev => ({ ...prev, [actionName]: true }));
+        try {
+            await actionFn?.();
+        } finally {
+            setLoadingStates(prev => ({ ...prev, [actionName]: false }));
+        }
     };
+
+    const handleExport = (filters) => {
+        handleAction('export', () => {
+            // Apply filters
+            let filteredExportData = [...data];
+
+            // Date range filter
+            if (filters.dateRange[0] && filters.dateRange[1]) {
+                filteredExportData = filteredExportData.filter(row => {
+                    const rowDate = new Date(row.date);
+                    return rowDate >= filters.dateRange[0] && rowDate <= filters.dateRange[1];
+                });
+            }
+
+            // Gender filter
+            if (filters.gender !== "all" && filters.gender) {
+                filteredExportData = filteredExportData.filter(row => row.gender === filters.gender);
+            }
+
+            // Age filter
+            if (filters.ageRange.min || filters.ageRange.max) {
+                filteredExportData = filteredExportData.filter(row => {
+                    const age = row.age;
+                    return (
+                        (!filters.ageRange.min || age >= parseInt(filters.ageRange.min)) &&
+                        (!filters.ageRange.max || age <= parseInt(filters.ageRange.max))
+                    );
+                });
+            }
+
+            // Prepare headers and keys
+            const headers = columns.map(col => col.header);
+            const keys = columns.map(col => col.key);
+
+            if (filters.format === "csv") {
+                // CSV Export
+                const csvContent = [
+                    headers.join(","),
+                    ...filteredExportData.map(row =>
+                        keys.map(key => `"${row[key] || ''}"`).join(","))
+                ].join("\n");
+
+                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = `${exportFileName}_${new Date().toISOString().slice(0, 10)}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                // Excel Export
+                const worksheetData = [
+                    headers,
+                    ...filteredExportData.map(row => keys.map(key => row[key] || ''))
+                ];
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+                XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+                XLSX.writeFile(wb, `${exportFileName}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            }
+
+            // Close modal after export
+            setShowExportModal(false);
+        });
+    };
+
+  
 
     // Cell content renderer
     const renderCellContent = (row, column) => {
@@ -95,8 +184,13 @@ const DataTable = ({
                             className={`action-btn ${action.name}-btn`}
                             onClick={() => action.handler(row)}
                             title={action.title}
+                            disabled={loadingStates[action.name]}
                         >
-                            {action.icon}
+                            {loadingStates[action.name] ? (
+                                <div className="spinner-small" />
+                            ) : (
+                                action.icon
+                            )}
                         </button>
                     ))}
                 </div>
@@ -111,38 +205,104 @@ const DataTable = ({
     };
 
     return (
-        <div className="admin-table-container">
+        <div className="data-table-container">
             {/* Table Controls */}
             <div className="table-controls">
                 <div className="controls-group">
-                    <div className="search-container">
-                        <div className="search-input-container">
-                            <FaSearch className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder=" "
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="search-input"
-                                id="search-input"
-                            />
-                            <label htmlFor="search-input" className="floating-label">
-                                {searchPlaceholder}
-                            </label>
-                            {searchTerm && (
-                                <button className="clear-search-btn" onClick={() => setSearchTerm("")}>
-                                    ×
-                                </button>
-                            )}
+                    {showSearch && (
+                        <div className="search-container">
+                            <div className="search-input-container">
+                                <FaSearch className="search-icon" />
+                                <input
+                                    type="text"
+                                    placeholder=" "
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="search-input"
+                                    id="search-input"
+                                />
+                                <label htmlFor="search-input" className="floating-label">
+                                    {searchPlaceholder}
+                                </label>
+                                {searchTerm && (
+                                    <button
+                                        className="clear-search-btn"
+                                        onClick={() => setSearchTerm("")}
+                                        aria-label="Clear search"
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 <div className="action-buttons-container">
-                    <button className="export-btn" onClick={exportToCSV}>
-                        <FaFileCsv className="btn-icon" />
-                        <span className="btn-text">Export as CSV</span>
-                    </button>
+                    {showAddNew && (
+                        <button
+                            className="Add-new action-btn"
+                            onClick={() => handleAction('addNew', onAddNew)}
+                            disabled={loadingStates.addNew}
+                        >
+                            {loadingStates.addNew ? (
+                                <div className="spinner" />
+                            ) : (
+                                <>
+                                    <FaPlus className="btn-icon" />
+                                    <span className="btn-text">Add Data</span>
+                                </>
+                            )}
+                        </button>
+                    )}
+
+                    {showDownloadSample && (
+                        <button
+                            className="sample-excel-download action-btn"
+                            onClick={() => handleAction('downloadSample', onDownloadSample)}
+                            disabled={loadingStates.downloadSample}
+                        >
+                            {loadingStates.downloadSample ? (
+                                <div className="spinner" />
+                            ) : (
+                                <>
+                                    <FaFileDownload className="btn-icon" />
+                                    <span className="btn-text">Sample Download</span>
+                                </>
+                            )}
+                        </button>
+                    )}
+
+                    {showUploadExcel && (
+                        <button
+                            className="excel-upload action-btn"
+                            onClick={() => handleAction('uploadExcel', onUploadExcel)}
+                            disabled={loadingStates.uploadExcel}
+                        >
+                            {loadingStates.uploadExcel ? (
+                                <div className="spinner" />
+                            ) : (
+                                <>
+                                    <FaFileUpload className="btn-icon" />
+                                    <span className="btn-text">Excel Upload</span>
+                                </>
+                            )}
+                        </button>
+                    )}
+
+                    {showExport && (
+                        <button
+                            className="download-excel action-btn"
+                            onClick={() => {
+                                console.log('Opening modal');
+                                setShowExportModal(true);
+                            }}
+
+                        >
+                            <BsDownload className="btn-icon" />
+                            <span className="btn-text">Export Data</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -156,11 +316,18 @@ const DataTable = ({
                                     key={column.key}
                                     onClick={() => column.sortable !== false && requestSort(column.key)}
                                     className={column.sortable !== false ? 'sortable' : ''}
+                                    aria-sort={
+                                        sortConfig.key === column.key
+                                            ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                                            : 'none'
+                                    }
                                 >
                                     <div className="th-content">
                                         {column.header}
                                         {sortConfig.key === column.key && (
-                                            sortConfig.direction === 'asc' ? <CiFilter /> : <IoFilterOutline />
+                                            sortConfig.direction === 'asc' ?
+                                                <FaFilter className="sort-icon asc" /> :
+                                                <FaFilter className="sort-icon desc" />
                                         )}
                                     </div>
                                 </th>
@@ -191,7 +358,6 @@ const DataTable = ({
                 </table>
             </div>
 
-            {/* Pagination - Same as before */}
             {/* Pagination */}
             {filteredData.length > rowsPerPage && (
                 <div className="pagination-container">
@@ -213,7 +379,6 @@ const DataTable = ({
 
                         <div className="page-numbers">
                             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                // Show first pages, current page with neighbors, and last pages
                                 let page;
                                 if (totalPages <= 5) {
                                     page = i + 1;
@@ -265,6 +430,18 @@ const DataTable = ({
                     </div>
                 </div>
             )}
+
+            {/* Export Modal */}
+        
+            <ExportModal
+                isOpen={showExportModal}
+                onClose={() => setShowExportModal(false)}
+                onExport={handleExport}
+                isLoading={loadingStates.export}
+                exportFileName={exportFileName}
+                columns={columns}
+                data={data}
+            />
         </div>
     );
 };

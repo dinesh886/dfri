@@ -36,13 +36,7 @@
     align-items: center;
 }
 
-.header-title h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--text);
-    margin: 0;
-    letter-spacing: -0.5px;
-}
+
 
 /* Profile Dropdown */
 .profile-dropdown {

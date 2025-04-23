@@ -201,10 +201,23 @@ const ManageData = () => {
                 <DataTable
                     data={sampleData}
                     columns={columns}
+                    // Button visibility controls
+                    showSearch={true}
+                    showAddNew={false}
+                    showDownloadSample={false}
+                    showUploadExcel={false}
+                    showExport={true}
+                    // Action handlers
                     onAddNew={handleAddNew}
-                    onView={handleView}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
+                    onDownloadSample={() => {
+                        // Sample download logic
+                        console.log("Downloading sample...");
+                    }}
+                    onUploadExcel={(file) => {
+                        // File upload logic
+                        console.log("Uploading file:", file);
+                    }}
+                    // Other props
                     searchPlaceholder="Search participants..."
                     exportFileName="participants"
                     rowsPerPageOptions={[10, 25, 50]}
