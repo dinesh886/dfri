@@ -140,7 +140,32 @@ const ManageData = () => {
                     {value}
                 </span>
             )
-        }
+        },
+        //  {
+        //     key: 'actions',
+        //     header: 'Actions',
+        //     actions: [
+        //         {
+        //             name: 'view',
+        //             icon: <FaEye />,
+        //             title: 'View Details',
+        //             handler: handleView
+        //         },
+        //         {
+        //             name: 'edit',
+        //             icon: <FaEdit />,
+        //             title: 'Edit Record',
+        //             handler: handleEdit
+        //         },
+        //         {
+        //             name: 'delete',
+        //             icon: <FaTrash />,
+        //             title: 'Delete Participant',
+        //             handler: handleDelete,
+        //             className: 'delete-action' // Optional custom class
+        //         }
+        //     ]
+        // }
     ];
 
     const handleAddNew = () => {
@@ -176,10 +201,23 @@ const ManageData = () => {
                 <DataTable
                     data={sampleData}
                     columns={columns}
+                    // Button visibility controls
+                    showSearch={true}
+                    showAddNew={false}
+                    showDownloadSample={false}
+                    showUploadExcel={false}
+                    showExport={true}
+                    // Action handlers
                     onAddNew={handleAddNew}
-                    onView={handleView}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
+                    onDownloadSample={() => {
+                        // Sample download logic
+                        console.log("Downloading sample...");
+                    }}
+                    onUploadExcel={(file) => {
+                        // File upload logic
+                        console.log("Uploading file:", file);
+                    }}
+                    // Other props
                     searchPlaceholder="Search participants..."
                     exportFileName="participants"
                     rowsPerPageOptions={[10, 25, 50]}

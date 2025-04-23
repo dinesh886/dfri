@@ -1,18 +1,33 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { FaEye, FaEdit, FaTrash, FaFileCsv, FaSearch, FaPlus, FaFilter, FaChevronDown, FaChevronUp } from "react-icons/fa";
+import {
+    FaEye, FaEdit, FaTrash, FaFileCsv,
+    FaSearch, FaDownload, FaPlus, FaFileUpload,
+    FaFileDownload, FaFilter, FaTimes, FaFileExcel
+} from "react-icons/fa";
 import { CiFilter } from "react-icons/ci";
+import { BsDownload } from "react-icons/bs";
 import { IoFilterOutline } from "react-icons/io5";
+import { DatePicker } from "antd";
+import * as XLSX from "xlsx";
+import ExportModal from "./ExportModal";
 import "./DataTable.css";
 
 const DataTable = ({
     data = [],
     columns = [],
+    // Button visibility controls
+    showSearch = true,
+    showAddNew = true,
+    showDownloadSample = true,
+    showUploadExcel = true,
+    showExport = true,
+    // Action handlers
     onAddNew,
-    onView,
-    onEdit,
-    onDelete,
+    onDownloadSample,
+    onUploadExcel,
+    // Other props
     searchPlaceholder = "Search...",
     exportFileName = "data_export",
     rowsPerPageOptions = [10, 25, 50],
@@ -22,7 +37,19 @@ const DataTable = ({
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState(defaultRowsPerPage);
+    const [loadingStates, setLoadingStates] = useState({
+        addNew: false,
+        downloadSample: false,
+        uploadExcel: false,
+        export: false
+    });
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [exportFormat, setExportFormat] = useState("csv");
+    const [dateRange, setDateRange] = useState([null, null]);
+    const [gender, setGender] = useState("all");
+    const [ageRange, setAgeRange] = useState({ min: "", max: "" });
 
+    // Memoized filtered and sorted data
     const filteredData = useMemo(() => {
         let result = [...data];
 
@@ -30,11 +57,13 @@ const DataTable = ({
         if (searchTerm) {
             result = result.filter((row) => {
                 return columns.some((col) => {
+                    if (col.searchable === false) return false;
                     const value = row[col.key];
                     return String(value).toLowerCase().includes(searchTerm.toLowerCase());
                 });
             });
         }
+
 
         // Sorting
         if (sortConfig.key) {
@@ -42,12 +71,8 @@ const DataTable = ({
                 const aValue = a[sortConfig.key];
                 const bValue = b[sortConfig.key];
 
-                if (aValue < bValue) {
-                    return sortConfig.direction === 'asc' ? -1 : 1;
-                }
-                if (aValue > bValue) {
-                    return sortConfig.direction === 'asc' ? 1 : -1;
-                }
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
             });
         }
@@ -55,144 +80,229 @@ const DataTable = ({
         return result;
     }, [data, columns, searchTerm, sortConfig]);
 
+    // Pagination logic
     const totalPages = Math.ceil(filteredData.length / rowsPerPage);
     const currentData = filteredData.slice(
         (currentPage - 1) * rowsPerPage,
         currentPage * rowsPerPage
     );
 
+    // Sorting handler
     const requestSort = (key) => {
-        let direction = 'asc';
-        if (sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
+        const direction = sortConfig.key === key && sortConfig.direction === 'asc'
+            ? 'desc'
+            : 'asc';
         setSortConfig({ key, direction });
     };
 
-    const exportToCSV = () => {
-        const headers = columns.map(col => col.header);
-        const keys = columns.map(col => col.key);
-
-        const csvContent =
-            headers.join(",") +
-            "\n" +
-            filteredData.map((row) =>
-                keys.map(key => {
-                    const value = row[key];
-                    // Format dates if needed
-                    if (key.toLowerCase().includes('date') && value instanceof Date) {
-                        return `"${new Date(value).toLocaleDateString()}"`;
-                    }
-                    return `"${value || ''}"`;
-                }).join(",")
-            ).join("\n");
-
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `${exportFileName}_${new Date().toISOString().slice(0, 10)}.csv`;
-        link.click();
+    // Action handlers with loading states
+    const handleAction = async (actionName, actionFn) => {
+        setLoadingStates(prev => ({ ...prev, [actionName]: true }));
+        try {
+            await actionFn?.();
+        } finally {
+            setLoadingStates(prev => ({ ...prev, [actionName]: false }));
+        }
     };
 
-    const handleClear = () => {
-        setSearchTerm("");
-        setCurrentPage(1);
+    const handleExport = (filters) => {
+        handleAction('export', () => {
+            // Apply filters
+            let filteredExportData = [...data];
+
+            // Date range filter
+            if (filters.dateRange[0] && filters.dateRange[1]) {
+                filteredExportData = filteredExportData.filter(row => {
+                    const rowDate = new Date(row.date);
+                    return rowDate >= filters.dateRange[0] && rowDate <= filters.dateRange[1];
+                });
+            }
+
+            // Gender filter
+            if (filters.gender !== "all" && filters.gender) {
+                filteredExportData = filteredExportData.filter(row => row.gender === filters.gender);
+            }
+
+            // Age filter
+            if (filters.ageRange.min || filters.ageRange.max) {
+                filteredExportData = filteredExportData.filter(row => {
+                    const age = row.age;
+                    return (
+                        (!filters.ageRange.min || age >= parseInt(filters.ageRange.min)) &&
+                        (!filters.ageRange.max || age <= parseInt(filters.ageRange.max))
+                    );
+                });
+            }
+
+            // Prepare headers and keys
+            const headers = columns.map(col => col.header);
+            const keys = columns.map(col => col.key);
+
+            if (filters.format === "csv") {
+                // CSV Export
+                const csvContent = [
+                    headers.join(","),
+                    ...filteredExportData.map(row =>
+                        keys.map(key => `"${row[key] || ''}"`).join(","))
+                ].join("\n");
+
+                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = `${exportFileName}_${new Date().toISOString().slice(0, 10)}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                // Excel Export
+                const worksheetData = [
+                    headers,
+                    ...filteredExportData.map(row => keys.map(key => row[key] || ''))
+                ];
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+                XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+                XLSX.writeFile(wb, `${exportFileName}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            }
+
+            // Close modal after export
+            setShowExportModal(false);
+        });
     };
 
+  
+
+    // Cell content renderer
     const renderCellContent = (row, column) => {
-        const value = row[column.key];
-
-        if (column.render) {
-            return column.render(value, row);
-        }
-
-        if (column.key.toLowerCase().includes('date') && value) {
-            return new Date(value).toLocaleDateString();
-        }
-
-        if (column.key.toLowerCase() === 'status' && value) {
+        if (column.actions) {
             return (
-                <span className={`status-badge ${String(value).toLowerCase()}`}>
-                    {value}
-                </span>
+                <div className="action-buttons">
+                    {column.actions.map((action, index) => (
+                        <button
+                            key={index}
+                            className={`action-btn ${action.name}-btn`}
+                            onClick={() => action.handler(row)}
+                            title={action.title}
+                            disabled={loadingStates[action.name]}
+                        >
+                            {loadingStates[action.name] ? (
+                                <div className="spinner-small" />
+                            ) : (
+                                action.icon
+                            )}
+                        </button>
+                    ))}
+                </div>
             );
         }
 
-        return value;
+        if (column.render) {
+            return column.render(row[column.key], row);
+        }
+
+        return row[column.key];
     };
 
     return (
-        <div className="admin-table-container">
+        <div className="data-table-container">
             {/* Table Controls */}
             <div className="table-controls">
-                {/* Left side - Search and Filter */}
                 <div className="controls-group">
-                    {/* Search with floating label effect */}
-                    <div className="search-container">
-                        <div className="search-input-container">
-                            <FaSearch className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder=" "
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="search-input"
-                                id="search-input"
-                            />
-                            <label htmlFor="search-input" className="floating-label">
-                                {searchPlaceholder}
-                            </label>
-                            {searchTerm && (
-                                <button className="clear-search-btn" onClick={() => setSearchTerm("")}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            )}
+                    {showSearch && (
+                        <div className="search-container">
+                            <div className="search-input-container">
+                                <FaSearch className="search-icon" />
+                                <input
+                                    type="text"
+                                    placeholder=" "
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="search-input"
+                                    id="search-input"
+                                />
+                                <label htmlFor="search-input" className="floating-label">
+                                    {searchPlaceholder}
+                                </label>
+                                {searchTerm && (
+                                    <button
+                                        className="clear-search-btn"
+                                        onClick={() => setSearchTerm("")}
+                                        aria-label="Clear search"
+                                    >
+                                        ×
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    </div>
-
-                    {/* Rows per page selector */}
-                    <div className="rows-per-page-selector">
-                        <select
-                            value={rowsPerPage}
-                            onChange={(e) => {
-                                setRowsPerPage(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="rows-per-page-select"
-                        >
-                            {rowsPerPageOptions.map(option => (
-                                <option key={option} value={option}>
-                                    Show {option}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Reset filters button */}
-                    {searchTerm && (
-                        <button className="reset-filters-btn" onClick={handleClear}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 7h16M6 7v12a2 2 0 002 2h8a2 2 0 002-2V7m-4-4v3m-6-3v3" />
-                            </svg>
-                            Reset
-                        </button>
                     )}
                 </div>
 
-                {/* Right side - Action buttons */}
                 <div className="action-buttons-container">
-                    {onAddNew && (
-                        <button className="add-new-btn" onClick={onAddNew}>
-                            <FaPlus className="btn-icon" />
-                            <span className="btn-text">Add New</span>
+                    {showAddNew && (
+                        <button
+                            className="Add-new action-btn"
+                            onClick={() => handleAction('addNew', onAddNew)}
+                            disabled={loadingStates.addNew}
+                        >
+                            {loadingStates.addNew ? (
+                                <div className="spinner" />
+                            ) : (
+                                <>
+                                    <FaPlus className="btn-icon" />
+                                    <span className="btn-text">Add Data</span>
+                                </>
+                            )}
                         </button>
                     )}
-                    <button className="export-btn" onClick={exportToCSV}>
-                        <FaFileCsv className="btn-icon" />
-                        <span className="btn-text">Export as CSV</span>
-                    </button>
+
+                    {showDownloadSample && (
+                        <button
+                            className="sample-excel-download action-btn"
+                            onClick={() => handleAction('downloadSample', onDownloadSample)}
+                            disabled={loadingStates.downloadSample}
+                        >
+                            {loadingStates.downloadSample ? (
+                                <div className="spinner" />
+                            ) : (
+                                <>
+                                    <FaFileDownload className="btn-icon" />
+                                    <span className="btn-text">Sample Download</span>
+                                </>
+                            )}
+                        </button>
+                    )}
+
+                    {showUploadExcel && (
+                        <button
+                            className="excel-upload action-btn"
+                            onClick={() => handleAction('uploadExcel', onUploadExcel)}
+                            disabled={loadingStates.uploadExcel}
+                        >
+                            {loadingStates.uploadExcel ? (
+                                <div className="spinner" />
+                            ) : (
+                                <>
+                                    <FaFileUpload className="btn-icon" />
+                                    <span className="btn-text">Excel Upload</span>
+                                </>
+                            )}
+                        </button>
+                    )}
+
+                    {showExport && (
+                        <button
+                            className="download-excel action-btn"
+                            onClick={() => {
+                                console.log('Opening modal');
+                                setShowExportModal(true);
+                            }}
+
+                        >
+                            <BsDownload className="btn-icon" />
+                            <span className="btn-text">Export Data</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -206,18 +316,22 @@ const DataTable = ({
                                     key={column.key}
                                     onClick={() => column.sortable !== false && requestSort(column.key)}
                                     className={column.sortable !== false ? 'sortable' : ''}
+                                    aria-sort={
+                                        sortConfig.key === column.key
+                                            ? sortConfig.direction === 'asc' ? 'ascending' : 'descending'
+                                            : 'none'
+                                    }
                                 >
                                     <div className="th-content">
                                         {column.header}
                                         {sortConfig.key === column.key && (
-                                            sortConfig.direction === 'asc' ? <CiFilter /> : <IoFilterOutline />
+                                            sortConfig.direction === 'asc' ?
+                                                <FaFilter className="sort-icon asc" /> :
+                                                <FaFilter className="sort-icon desc" />
                                         )}
                                     </div>
                                 </th>
                             ))}
-                            {(onView || onEdit || onDelete) && (
-                                <th>Actions</th>
-                            )}
                         </tr>
                     </thead>
                     <tbody>
@@ -229,42 +343,11 @@ const DataTable = ({
                                             {renderCellContent(row, column)}
                                         </td>
                                     ))}
-                                    {(onView || onEdit || onDelete) && (
-                                        <td className="actions-cell">
-                                            {onView && (
-                                                <button
-                                                    className="action-btn view-btn"
-                                                    onClick={() => onView(row)}
-                                                    title="View"
-                                                >
-                                                    <FaEye />
-                                                </button>
-                                            )}
-                                            {onEdit && (
-                                                <button
-                                                    className="action-btn edit-btn"
-                                                    onClick={() => onEdit(row)}
-                                                    title="Edit"
-                                                >
-                                                    <FaEdit />
-                                                </button>
-                                            )}
-                                            {onDelete && (
-                                                <button
-                                                    className="action-btn delete-btn"
-                                                    onClick={() => onDelete(row)}
-                                                    title="Delete"
-                                                >
-                                                    <FaTrash />
-                                                </button>
-                                            )}
-                                        </td>
-                                    )}
                                 </tr>
                             ))
                         ) : (
                             <tr className="no-data-row">
-                                <td colSpan={columns.length + ((onView || onEdit || onDelete) ? 1 : 0)}>
+                                <td colSpan={columns.length}>
                                     <div className="no-data-message">
                                         No matching records found
                                     </div>
@@ -296,7 +379,6 @@ const DataTable = ({
 
                         <div className="page-numbers">
                             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                // Show first pages, current page with neighbors, and last pages
                                 let page;
                                 if (totalPages <= 5) {
                                     page = i + 1;
@@ -348,6 +430,18 @@ const DataTable = ({
                     </div>
                 </div>
             )}
+
+            {/* Export Modal */}
+        
+            <ExportModal
+                isOpen={showExportModal}
+                onClose={() => setShowExportModal(false)}
+                onExport={handleExport}
+                isLoading={loadingStates.export}
+                exportFileName={exportFileName}
+                columns={columns}
+                data={data}
+            />
         </div>
     );
 };

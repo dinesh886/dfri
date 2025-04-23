@@ -5,11 +5,14 @@
 
 .page-header {
   margin-bottom: var(--space-lg);
+  padding: 10px 0px;
 }
 
 .page-header h1 {
-  color: var(--color-primary);
-  margin-bottom: var(--space-xs);
+  color: var(--sidebar-active);
+  /* margin-bottom: var(--space-xs); */
+  font-size: 25px;
+  
 }
 
 .page-header p {
@@ -17,46 +20,149 @@
   opacity: 0.8;
 }
 
-.page-actions {
+
+
+
+
+
+
+
+.delete-btn svg {
+  width: 15px;
+  height: 15px;
+
+}
+.table-image{
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--color-secondary);
+  
+}
+/* Doctor Image */
+.doctor-image-container {
   display: flex;
-  gap: var(--space-md);
-  margin-bottom: var(--space-lg);
+  justify-content: center;
+  align-items: center;
 }
 
-.action-button {
-  padding: var(--space-sm) var(--space-lg);
-  border-radius: var(--radius-md);
-  font-weight: 500;
+.doctor-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e0e0e0;
+}
+
+/* Status Toggle */
+.status-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
+  background: none;
   border: none;
-  transition: all var(--transition-fast);
+  padding: 0;
 }
 
-.action-button.primary {
-  background-color: var(--color-primary);
-  color: white;
+.status-toggle-track {
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  position: relative;
+  transition: all 0.3s ease;
 }
 
-.action-button.primary:hover {
-  background-color: var(--color-primary-dark);
+.status-toggle.enabled .status-toggle-track {
+  background-color: #4ade80;
 }
 
-.action-button.secondary {
-  background-color: var(--color-surface);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
+.status-toggle.disabled .status-toggle-track {
+  background-color: #f87171;
 }
 
-.action-button.secondary:hover {
-  background-color: var(--color-background);
+.status-toggle-thumb {
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@media screen and (max-width: 768px) {
-  .page-actions {
-    flex-direction: column;
-  }
+.status-toggle.enabled .status-toggle-thumb {
+  left: calc(100% - 22px);
+}
 
-  .action-button {
-    width: 100%;
-  }
+.status-toggle.disabled .status-toggle-thumb {
+  left: 2px;
+}
+
+.status-icon {
+  font-size: 12px;
+}
+
+.status-toggle.enabled .status-icon {
+  color: #4ade80;
+}
+
+.status-toggle.disabled .status-icon {
+  color: #f87171;
+}
+
+.status-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+
+
+
+
+.view-action {
+  color: #60a5fa;
+}
+
+.view-action:hover {
+  background-color: #dbeafe;
+}
+
+.edit-action {
+  color: #4ade80;
+}
+
+.edit-action:hover {
+  background-color: #dcfce7;
+}
+
+.delete-action {
+  color: #f87171;
+}
+
+.delete-action:hover {
+  background-color: #fee2e2;
+}
+
+/* Toast Notifications */
+.Toastify__toast {
+  border-radius: 8px !important;
+  font-family: inherit !important;
+  height: 50px;
+}
+
+.Toastify__toast--success {
+  background-color: #4ade80 !important;
+}
+
+.Toastify__toast--info {
+  background-color: #60a5fa !important;
+}
+
+.Toastify__toast--error {
+  background-color: #f87171 !important;
 }

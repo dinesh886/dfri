@@ -40,7 +40,7 @@ const AdminSidebar = ({ isOpen, toggleSidebar }) => {
     }, [isOpen, isMobile]);
 
     const menuItems = [
-        { path: '/admin/save-the-feet-rssdi-program', icon: <FaClipboardList />, label: 'Manage Data' },
+        {  label: 'Manage Data' },
         { path: '/admin/foot-exam', icon: <FaUserMd />, label: 'Foot Exam' },
         { path: '/admin/doctor-list', icon: <FaUserMd />, label: 'Doctor List' },
         { path: '/admin/profile', icon: <FaUserCog />, label: 'Profile' },
@@ -129,7 +129,7 @@ const AdminSidebar = ({ isOpen, toggleSidebar }) => {
                             onMouseEnter={() => setHoveredItem('logout')}
                             onMouseLeave={() => setHoveredItem(null)}
                         >
-                            <Link to="/logout" className="logout-link">
+                            <Link to="/admin-login" className="logout-link">
                                 <span className="icon-wrapper">
                                     <FaSignOutAlt className="logout-icon" />
                                 </span>

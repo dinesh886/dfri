@@ -1,151 +1,146 @@
 import React from 'react';
-import Header from '../../components/Header';
+import UserLayout from '../../layouts/UserLayout';
 import DataTable from '../../components/DataTable';
-
-import { FaEdit } from 'react-icons/fa'; 
-
-const sampleData = [
-    {
-        sNo:1,
-        participantId: 'P-1001',
-        participantName: 'John Doe',
-        date: '2025-04-01',
-        status: 'completed'
-    },
-    {
-        sNo:2,
-        participantId: 'P-1002',
-        participantName: 'Jane Smith',
-        date: '2025-04-02',
-        status: 'Pending'
-    },
-    {
-        sNo:3,
-        participantId: 'P-1003',
-        participantName: 'Alice Johnson',
-        date: '2025-04-03',
-        status: 'completed'
-    },
-    {
-        sNo:4,
-        participantId: 'P-1004',
-        participantName: 'Bob Lee',
-        date: '2025-04-04',
-        status: 'Pending'
-    },
-    {
-        sNo:5,
-        participantId: 'P-1005',
-        participantName: 'Charlie Kim',
-        date: '2025-04-05',
-        status: 'completed'
-    },
-    {
-        sNo:6,
-        participantId: 'P-1006',
-        participantName: 'Diana Prince',
-        date: '2025-04-06',
-        status: 'Pending'
-    },
-    {
-        sNo:7,
-        participantId: 'P-1007',
-        participantName: 'Ethan Hunt',
-        date: '2025-04-07',
-        status: 'completed'
-    },
-    {
-        sNo:8,
-        participantId: 'P-1008',
-        participantName: 'Fiona Gallagher',
-        date: '2025-04-08',
-        status: 'Pending'
-    },
-    {
-        sNo:9,
-        participantId: 'P-1009',
-        participantName: 'George Michaels',
-        date: '2025-04-09',
-        status: 'completed'
-    },
-    {
-        sNo:10,
-        participantId: 'P-1010',
-        participantName: 'Hannah Brown',
-        date: '2025-04-10',
-        status: 'Pending'
-    }
-];
-
-const columns = [
-    {
-        key: 'sNo',
-        header: 'S.NO',
-        sortable: true,
-        selector: row => row.sNo,
-    },
-    {
-        key: 'participantId',
-        header: 'Participant ID',
-        sortable: true,
-    },
-    {
-        key: 'participantName',
-        header: 'Participant Name',
-        sortable: true,
-    },
-    {
-        key: 'date',
-        header: 'Date',
-        sortable: true,
-    },
-    {
-        key: 'status',
-        header: 'Status',
-        sortable: true,
-        cell: row => (
-            <span style={{ color: row.status.toLowerCase() === 'completed' ? 'green' : 'red' }}>
-                {row.status}
-            </span>
-        ),
-    },
-    {
-        key: 'actions',
-        header: 'Actions',
-        cell: row => (
-            row.status === 'Pending' && (
-                <button 
-                    onClick={() => handleEdit(row)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                >
-                    <FaEdit />
-                </button>
-            )
-        ),
-        ignoreRowClick: true,
-        allowOverflow: true,
-        button: true,
-    },
-];
-
+import './UserDashboard.css';
 
 const UserDashboard = () => {
-    return (
-        <div className="user-dashboard">
-            <Header />
-           <div className="container">
-           <DataTable
-                data={sampleData}
-                columns={columns}
-                searchPlaceholder="Search participants..."
-                exportFileName="participants"
-                rowsPerPageOptions={[10, 25, 50]}
-                    defaultRowsPerPage={10}
-                />
+    // Sample data for doctor's dashboard
+    const doctorData = [
+        {
+            sNo: 1,
+            patientId: "PT-101",
+            patientName: "John Doe",
+            appointmentDate: "2023-05-15",
+            diagnosis: "Hypertension",
+            status: "Completed",
+            lastVisit: "2023-04-10"
+        },
+        {
+            sNo: 2,
+            patientId: "PT-102",
+            patientName: "Jane Smith",
+            appointmentDate: "2023-05-16",
+            diagnosis: "Diabetes",
+            status: "Pending",
+            lastVisit: "2023-03-15"
+        },
+        {
+            sNo: 3,
+            patientId: "PT-103",
+            patientName: "Robert Brown",
+            appointmentDate: "2023-05-17",
+            diagnosis: "Asthma",
+            status: "Scheduled",
+            lastVisit: "2023-02-20"
+        },
+        {
+            sNo: 4,
+            patientId: "PT-104",
+            patientName: "Sarah Johnson",
+            appointmentDate: "2023-05-18",
+            diagnosis: "Migraine",
+            status: "Completed",
+            lastVisit: "2023-01-05"
+        },
+        {
+            sNo: 5,
+            patientId: "PT-105",
+            patientName: "Michael Davis",
+            appointmentDate: "2023-05-19",
+            diagnosis: "Arthritis",
+            status: "Pending",
+            lastVisit: "2022-12-12"
+        },
+        {
+            sNo: 6,
+            patientId: "PT-106",
+            patientName: "Emily Wilson",
+            appointmentDate: "2023-05-20",
+            diagnosis: "Depression",
+            status: "Completed",
+            lastVisit: "2022-11-18"
+        }
+    ];
 
-           </div>
-           
-        </div>
+    // Define columns for the DataTable
+    const columns = [
+        {
+            key: 'sNo',
+            header: 'S.NO',
+            sortable: true
+        },
+        {
+            key: 'patientId',
+            header: 'Patient ID',
+            sortable: true
+        },
+        {
+            key: 'patientName',
+            header: 'Patient Name',
+            sortable: true
+        },
+        {
+            key: 'appointmentDate',
+            header: 'Appointment Date',
+            sortable: true,
+            render: (value) => new Date(value).toLocaleDateString()
+        },
+        {
+            key: 'diagnosis',
+            header: 'Diagnosis',
+            sortable: true
+        },
+        {
+            key: 'status',
+            header: 'Status',
+            sortable: true,
+            render: (value) => (
+                <span className={`status-badge ${value.toLowerCase()}`}>
+                    {value}
+                </span>
+            )
+        },
+        {
+            key: 'lastVisit',
+            header: 'Last Visit',
+            sortable: true,
+            render: (value) => new Date(value).toLocaleDateString()
+        }
+    ];
+
+    const handleView = (row) => {
+        console.log("View patient:", row);
+        // Implement your view logic here
+    };
+
+    const handleAddNew = () => {
+        console.log("Add new patient clicked");
+        // Implement your add new logic here
+    };
+
+    return (
+        <UserLayout>
+            <div className="doctor-dashboard">
+                {/* <div className="dashboard-header">
+                    <h1>Doctor Dashboard</h1>
+                    <p>Manage your patients and appointments</p>
+                </div> */}
+
+              
+
+                <DataTable
+                    data={doctorData}
+                    columns={columns}
+                    onAddNew={handleAddNew}
+                    onView={handleView}
+                    searchPlaceholder="Search patients..."
+                    exportFileName="doctor_patients"
+                    rowsPerPageOptions={[5, 10, 25]}
+                    defaultRowsPerPage={5}
+                    title="Patient Records"
+                />
+            </div>
+        </UserLayout>
     );
 };
 

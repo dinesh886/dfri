@@ -23,7 +23,7 @@ const AppRoutes = () => {
 
             {/* Admin protected routes */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-                <Route path="/admin/manage-data" element={<ManageData />} />
+                {/* <Route path="/admin/manage-data" element={<ManageData />} /> */}
                 <Route path="/admin/foot-exam" element={<FootExam />} />
                 <Route path="/admin/doctor-list" element={<DoctorList />} />
                 <Route path="/admin/profile" element={<Profile />} />
